@@ -55,12 +55,12 @@ def add_methods(cls):
             def method(self, other):
                 if isinstance(other, (int, float)):
                     v = G[op](self.v, other)
-                    r = self.e/self.v
+                    r = abs(self.e/self.v)
                     e = v * r
                     return Data(v, e)
                 elif type(other) == type(self) or type(other) == type(Value()):
                     v = G[op](self.v, other.v)
-                    r = p(self.e/self.v, other.e/other.v)
+                    r = p(abs(self.e/self.v), abs(other.e/other.v))
                     e = v * r
                     return Data(v, e)
                 else:
@@ -78,8 +78,8 @@ def add_methods(cls):
         setattr(cls, op, make_method(op))
 
     return cls   
-    
-             
+
+
 @add_methods
 class Data():
     def __init__(self, A = list(), E = 0):
@@ -96,13 +96,13 @@ class Data():
         if type(A) == type(np.array([0.0])):
             self.e = deepcopy(A)
         elif isinstance(A, (int, float)):
-            self.e = np.full(len(self.v), A)
+            self.e = np.zeros(len(self.v))
+            self.e.fill(A)
         else:
             self.e = np.array(A)
     
-    def len(self):
-        self.l = self.v.size
-        return self.l
+    def __len__(self): 
+        return self.v.size
                
     def read(self, 
              file_name, 
@@ -140,12 +140,14 @@ class Data():
 
         if e_col == None:
             E = [e]*len(V)
-        self.e = np.array(E)
+            
 
         if erase: 
             self.v = np.array(V)
+            self.e = np.array(E)
         else: 
             self.v = np.concatenate((self.v, np.array(V)))
+            self.e = np.concatenate((self.e, np.array(E)))
 
     def __str__(self):
         L = list()
@@ -159,13 +161,28 @@ class Data():
     def __invert__(self):
         return self.mean()
     
-    def catch(self, d):
-        prev = self.v[0]
+    def __pow__(self, other):
+        if isinstance(other, (int, float)):
+            v = self.v ** other
+            r = abs(self.e/self.v) * abs(other)
+            return Data(v, v * r)
+    
+    def catch(self, d, rewrite = True):
+        V = deepcopy(self.v)
+        E = deepcopy(self.e)
+
+        prev = V[0]
         i = 1
-        while i < len(self.v):
-            if abs(self.v[i] - prev) >= d:
-                self.v = np.delete(self.v, i)
-                self.e = np.delete(self.e, i)
+        while i < len(V):
+            if abs(V[i] - prev) >= d:
+                V =  np.delete(V, i)
+                E  = np.delete(E, i)
                 continue
-            prev = self.v[i]
+            prev = V[i]
             i += 1
+        
+        if rewrite:
+            self.v = deepcopy(V)
+            self.e = deepcopy(E)
+
+        return Data(V, E)
