@@ -43,12 +43,15 @@ class Value():
             self.r = inf
         else:
             self.r = self.e / self.v
+        
+        return self.r
     
     # границы доверительного интервала
 
     def _bounds(self, number = 1):
         self.right = self.v + number * self.e
         self.left = self.v - number * self.e
+        return (self.left, self.right)
 
     def _update(self):
         self._rel()
@@ -77,7 +80,6 @@ class Value():
                     else:
                         if int(S[idx + 2]) >= 5:
                             idx -= 1
-            #if S[idx] == '.' : idx +=1
             
             return idx - point + (idx <= point)
         
@@ -86,11 +88,20 @@ class Value():
     def truncate(self):
         r = Value.rounder(self.e)
         return (round(self.v, r), round(self.e, r))
+    
+    # Пифагорово сложение
 
     @staticmethod
-    def p(x, y): # пифагорово сложение
+    def p(x, y): 
         return sqrt(x*x + y*y)
     
+    # Нахождение величины по её доверительному интервалу
+
+    @staticmethod
+    def interval(x, y):
+        v = (x + y)/2
+        e = abs(x - y)/2
+        return Value(v, e)
     # АРИФМЕТИЧЕСКИЕ ОПЕРАЦИИ
 
     # Сложение
@@ -215,13 +226,7 @@ class Value():
         return Value(v, abs(sin(self.v)) * self.e)
 
 
-    # Нахождение величины по её доверительному интервалу
 
-    @staticmethod
-    def interval(x, y):
-        v = (x + y)/2
-        e = abs(x - y)/2
-        return Value(v, e)
 
     # СРАВНЕНИЕ
 
@@ -252,6 +257,8 @@ class Value():
         if not isinstance(other, Value):
             return self.v >= other or self == other
         return self.v >= other.v or self == other
+    
+    # Модуль
     
     def __abs__(self):
         return Value(abs(self.v), self.e)
